@@ -6,7 +6,13 @@ export default function SchoolCatalog() {
   const [filter, setFilter] = useState("");
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState("asc");
+  const [currentPage, setCurrentPage] = useState(1);
 
+  const itemsPerPage = 5;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+
+  
   const handleSort = (column) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -15,18 +21,25 @@ export default function SchoolCatalog() {
       setSortDirection("asc");
     }
   };
-
+  
   const sortedCourses = [...courses].sort((a, b) => {
     if (!sortColumn) return 0;
     const aVal = a[sortColumn];
     const bVal = b[sortColumn];
-
+    
     if (typeof aVal === "string") {
       return sortDirection === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     }
-
+    
     return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
   });
+  
+  const totalPages = Math.ceil(
+    sortedCourses.filter(course =>
+      course.courseName.toLowerCase().includes(filter.toLowerCase()) ||
+      course.courseNumber.toLowerCase().includes(filter.toLowerCase())
+    ).length / itemsPerPage
+  );
 
   useEffect(() => {
     fetch('/api/courses.json')
@@ -55,6 +68,7 @@ export default function SchoolCatalog() {
               courses.courseName.toLowerCase().includes(filter.toLowerCase()) ||
               courses.courseNumber.toLowerCase().includes(filter.toLowerCase())
             )
+            .slice(startIndex, endIndex)
             .map((course, index) => (
             <tr key={index}>
               <td>{course.trimester}</td>
@@ -70,8 +84,8 @@ export default function SchoolCatalog() {
         </tbody>
       </table>
       <div className="pagination">
-        <button>Previous</button>
-        <button>Next</button>
+        <button onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} style={{ cursor: "pointer"}}>Previous</button>
+        <button onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages} style={{ cursor: "pointer"}}>Next</button>
       </div>
     </div>
   );
